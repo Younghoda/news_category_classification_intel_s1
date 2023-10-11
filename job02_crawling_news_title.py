@@ -1,0 +1,57 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+import pandas as pd
+import re
+import time
+import datetime
+
+
+
+options = ChromeOptions()
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
+options.add_argument('user-agent=' + user_agent)
+options.add_argument("lang=ko_KR")
+# options.add_argument('headless')  # 화면에 안보임 -> 그래서 주석처리함.
+# options.add_argument('window-size=1920x1080')
+# options.add_argument("disable-gpu")
+# options.add_argument("--no-sandbox")
+
+# 크롬 드라이버 최신 버전 설정
+service = ChromeService(executable_path=ChromeDriverManager().install())
+
+# chrome driver
+driver = webdriver.Chrome(service=service, options=options)  # <- options로 변경
+
+category = ['Politics', 'Economic', 'Social', 'Culture', 'World', 'IT']
+pages = [110, 110, 110, 75, 110, 72]    #[146, 328, 461, 75, 117, 72] -> 페이지 차이가 많이 나면 큰쪽으로 되기 때문에 일부러 맞춰줬다.
+df_titles = pd.DataFrame()
+for l in range(6):
+    section_url = 'https://news.naver.com/main/main.naver?mode=LSD&mid=shm&sid1=10{}'.format(l)
+    titles = []
+    for k in range(1, 3):
+        url = section_url + '#&date=%2000:00:00&page={}'.format(k)
+        driver.get(url)
+        time.sleep(0.5) # 페이지를 바꿀 시간을 줘야한다 없으면 에러가 발생할 수 있음.
+        for i in range(1, 5):
+            for j in range(1, 6):
+                title = driver.find_element('xpath', '//*[@id="section_body"]/ul[{}]/li[{}]/dl/dt[2]/a'.format(i, j)).text
+                title = re.compile('[^가-힣]').sub('', title)
+                titles.append(title)
+    df_section_title = pd.DataFrame(titles, columns=['titles'])
+    df_section_title['category'] = category[l]
+    df_titles = pd.concat([df_titles, df_section_title], ignore_index=True)
+df_titles.to_csv('./crawling_data/crawling_data.csv', index=False)
+
+print(df_titles.head())   #리스트로 저장됨
+df_titles.info()
+print(df_titles['category'].value_counts())
+
+
+# //*[@id="section_body"]/ul[1]/li[1]/dl/dt[2]/a    # Xpath -> class이름을 따라서 경로를 찾음
+# //*[@id="section_body"]/ul[1]/li[2]/dl/dt[2]/a    #2번째
+# //*[@id="section_body"]/ul[1]/li[5]/dl/dt[2]/a    #5번째
+# //*[@id="section_body"]/ul[2]/li[1]/dl/dt[2]/a    #6번째
+# //*[@id="section_body"]/ul[4]/li[5]/dl/dt[2]/a    #페이지 마지막(20번째)
