@@ -28,22 +28,31 @@ driver = webdriver.Chrome(service=service, options=options)  # <- options로 변
 category = ['Politics', 'Economic', 'Social', 'Culture', 'World', 'IT']
 pages = [110, 110, 110, 75, 110, 72]    #[146, 328, 461, 75, 117, 72] -> 페이지 차이가 많이 나면 큰쪽으로 되기 때문에 일부러 맞춰줬다.
 df_titles = pd.DataFrame()
-for l in range(6):
+for l in range(1,2):
     section_url = 'https://news.naver.com/main/main.naver?mode=LSD&mid=shm&sid1=10{}'.format(l)
     titles = []
-    for k in range(1, 3):
+    for k in range(1, pages[l]+1):
         url = section_url + '#&date=%2000:00:00&page={}'.format(k)
         driver.get(url)
         time.sleep(0.5) # 페이지를 바꿀 시간을 줘야한다 없으면 에러가 발생할 수 있음.
         for i in range(1, 5):
             for j in range(1, 6):
-                title = driver.find_element('xpath', '//*[@id="section_body"]/ul[{}]/li[{}]/dl/dt[2]/a'.format(i, j)).text
-                title = re.compile('[^가-힣]').sub('', title)
-                titles.append(title)
+                try:
+                    title = driver.find_element('xpath', '//*[@id="section_body"]/ul[{}]/li[{}]/dl/dt[2]/a'.format(i, j)).text
+                    title = re.compile('[^가-힣]').sub('', title)
+                    titles.append(title)
+                except:
+                    print("error {} {} {} {}".format(l, k, i, j))
+        if k%10 ==0:
+            df_section_title = pd.DataFrame(titles, columns=['titles'])
+            df_section_title['category'] = category[l]
+            df_titles = pd.concat([df_titles, df_section_title], ignore_index=True)
+            df_titles.to_csv('./crawling_data/crawling_data_{}_{}.csv'.format(l,k), index=False)
+            titles=[]
     df_section_title = pd.DataFrame(titles, columns=['titles'])
     df_section_title['category'] = category[l]
     df_titles = pd.concat([df_titles, df_section_title], ignore_index=True)
-df_titles.to_csv('./crawling_data/crawling_data.csv', index=False)
+    df_titles.to_csv('./crawling_data/crawling_data_last.csv', index=False)
 
 print(df_titles.head())   #리스트로 저장됨
 df_titles.info()
