@@ -22,7 +22,7 @@ labeled_y = encoder.fit_transform(Y)    # 라벨로 바꿔줌
 print(labeled_y[:3])    # [3 3 3]
 label = encoder.classes_
 print(label)
-with open('./models/encoder.pickel', 'wb') as f:
+with open('./models/encoder.pickle', 'wb') as f:
     pickle.dump(encoder, f)
 
 onehot_y = to_categorical(labeled_y)

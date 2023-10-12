@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import datetime
 
-category = ['Politics', 'Economic', 'Social', 'Culture', 'World', 'IT']
+category = ['Politic', 'Economic', 'Social', 'Culture', 'World', 'IT']
 url = 'https://news.naver.com/main/main.naver?mode=LSD&mid=shm&sid1=100'
 
 
